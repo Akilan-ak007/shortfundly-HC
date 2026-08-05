@@ -2,6 +2,7 @@ import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 import QRCode from 'qrcode';
+import { PDFDocument as PDFLibDoc } from 'pdf-lib';
 
 interface PDFVariables {
   [key: string]: string;
@@ -17,10 +18,12 @@ export class PDFService {
     variables: PDFVariables,
     docType: string,
     outputPath: string,
-    qrData?: string
+    qrData?: string,
+    designMetadata?: any
   ): Promise<string> {
     return new Promise(async (resolve, reject) => {
       try {
+        const storageDir = process.env.STORAGE_DIR || './storage';
         // Ensure the directory exists
         const dir = path.dirname(outputPath);
         if (!fs.existsSync(dir)) {
@@ -44,6 +47,26 @@ export class PDFService {
           }
         }
 
+        // Determine if custom template background is present
+        let hasBackground = false;
+        let bgImagePath = '';
+        const bgUrl = designMetadata?.backgroundImageUrl;
+        
+        if (bgUrl) {
+          const relativePath = bgUrl.replace(/^\/storage\//, '');
+          bgImagePath = path.resolve(storageDir, relativePath);
+          if (fs.existsSync(bgImagePath) && !bgImagePath.toLowerCase().endsWith('.pdf')) {
+            hasBackground = true;
+          }
+        }
+
+        // Check if PDF background path is set
+        const bgPdfUrl = designMetadata?.backgroundPdfUrl || (bgUrl?.toLowerCase().endsWith('.pdf') ? bgUrl : null);
+        const bgPdfPath = designMetadata?.backgroundPdfPath || (bgPdfUrl ? path.resolve(storageDir, bgPdfUrl.replace(/^\/storage\//, '')) : null);
+        if (bgPdfPath && fs.existsSync(bgPdfPath)) {
+          hasBackground = true;
+        }
+
         // Decide orientation based on document type
         const isCertificate = docType === 'CERTIFICATE';
         const doc = new PDFDocument({
@@ -55,16 +78,60 @@ export class PDFService {
         const writeStream = fs.createWriteStream(outputPath);
         doc.pipe(writeStream);
 
+        // Draw background image if png/jpg
+        if (hasBackground && bgImagePath && fs.existsSync(bgImagePath) && !bgImagePath.toLowerCase().endsWith('.pdf')) {
+          doc.image(bgImagePath, 0, 0, { width: doc.page.width, height: doc.page.height });
+        }
+
         if (isCertificate) {
-          this.drawCertificate(doc, parsedContent, variables, qrBuffer);
+          this.drawCertificate(doc, parsedContent, variables, qrBuffer, hasBackground);
         } else {
-          this.drawLetter(doc, parsedContent, variables, docType, qrBuffer);
+          this.drawLetter(doc, parsedContent, variables, docType, qrBuffer, hasBackground);
         }
 
         doc.end();
 
-        writeStream.on('finish', () => {
-          resolve(outputPath);
+        writeStream.on('finish', async () => {
+          try {
+            // Apply pdf-lib background overlay if background is a PDF file
+            if (bgPdfPath && fs.existsSync(bgPdfPath)) {
+              const bgBytes = fs.readFileSync(bgPdfPath);
+              const fgBytes = fs.readFileSync(outputPath);
+
+              const bgDoc = await PDFLibDoc.load(bgBytes);
+              const fgDoc = await PDFLibDoc.load(fgBytes);
+
+              const mergedDoc = await PDFLibDoc.create();
+              const bgPagesCount = bgDoc.getPageCount();
+              const fgPagesCount = fgDoc.getPageCount();
+
+              for (let i = 0; i < Math.max(bgPagesCount, fgPagesCount); i++) {
+                let page;
+                if (i < bgPagesCount) {
+                  const [copiedBg] = await mergedDoc.copyPages(bgDoc, [i]);
+                  page = mergedDoc.addPage(copiedBg);
+                } else {
+                  page = mergedDoc.addPage();
+                }
+
+                if (i < fgPagesCount) {
+                  const [embeddedFg] = await mergedDoc.embedPages([fgDoc.getPage(i)]);
+                  page.drawPage(embeddedFg, {
+                    x: 0,
+                    y: 0,
+                    width: page.getWidth(),
+                    height: page.getHeight(),
+                  });
+                }
+              }
+
+              const mergedBytes = await mergedDoc.save();
+              fs.writeFileSync(outputPath, mergedBytes);
+            }
+            resolve(outputPath);
+          } catch (overlayErr) {
+            reject(overlayErr);
+          }
         });
 
         writeStream.on('error', (err) => {
@@ -83,28 +150,37 @@ export class PDFService {
     doc: PDFKit.PDFDocument,
     content: string,
     variables: PDFVariables,
-    qrBuffer?: Buffer
+    qrBuffer?: Buffer,
+    hasBackground: boolean = false
   ) {
     const width = doc.page.width;
     const height = doc.page.height;
 
-    // Draw dark border
-    doc.rect(20, 20, width - 40, height - 40).lineWidth(3).stroke('#1e293b');
+    if (!hasBackground) {
+      // Draw dark border
+      doc.rect(20, 20, width - 40, height - 40).lineWidth(3).stroke('#1e293b');
 
-    // Draw inner gold border
-    doc.rect(26, 26, width - 52, height - 52).lineWidth(1.5).stroke('#d97706');
+      // Draw inner gold border
+      doc.rect(26, 26, width - 52, height - 52).lineWidth(1.5).stroke('#d97706');
 
-    // Decorative corner shapes
-    doc.rect(20, 20, 30, 30).fill('#1e293b');
-    doc.rect(width - 50, 20, 30, 30).fill('#1e293b');
-    doc.rect(20, height - 50, 30, 30).fill('#1e293b');
-    doc.rect(width - 50, height - 50, 30, 30).fill('#1e293b');
+      // Decorative corner shapes
+      doc.rect(20, 20, 30, 30).fill('#1e293b');
+      doc.rect(width - 50, 20, 30, 30).fill('#1e293b');
+      doc.rect(20, height - 50, 30, 30).fill('#1e293b');
+      doc.rect(width - 50, height - 50, 30, 30).fill('#1e293b');
+    }
 
     // Reset fill
     doc.fillColor('#1e293b');
 
+    // Corporate Header (Company Name)
+    const companyHeader = (variables.Company || 'PLATFORM ENTERPRISES').toUpperCase();
+    doc.font('Helvetica-Bold').fontSize(12).fillColor('#d97706').text(companyHeader, 0, 48, {
+      align: 'center',
+    });
+
     // Certificate Title
-    doc.font('Helvetica-Bold').fontSize(38).fillColor('#0f172a').text('CERTIFICATE OF EXCELLENCE', 0, 75, {
+    doc.font('Helvetica-Bold').fontSize(36).fillColor('#0f172a').text('CERTIFICATE OF EXCELLENCE', 0, 75, {
       align: 'center',
     });
 
@@ -160,16 +236,19 @@ export class PDFService {
     content: string,
     variables: PDFVariables,
     docType: string,
-    qrBuffer?: Buffer
+    qrBuffer?: Buffer,
+    hasBackground: boolean = false
   ) {
     const width = doc.page.width;
     const margin = 50;
 
-    // Sleek header accent bar
-    doc.rect(margin, 20, width - margin * 2, 8).fill('#0ea5e9');
+    if (!hasBackground) {
+      // Sleek header accent bar
+      doc.rect(margin, 20, width - margin * 2, 8).fill('#0ea5e9');
 
-    // Corporate Letterhead Header
-    doc.font('Helvetica-Bold').fontSize(18).fillColor('#0f172a').text(variables.Company || 'PLATFORM ENTERPRISES', margin, 45);
+      // Corporate Letterhead Header
+      doc.font('Helvetica-Bold').fontSize(18).fillColor('#0f172a').text(variables.Company || 'PLATFORM ENTERPRISES', margin, 45);
+    }
     doc.font('Helvetica').fontSize(9).fillColor('#64748b').text('Automated HR Platform Communication', margin, 65);
 
     // Document Title

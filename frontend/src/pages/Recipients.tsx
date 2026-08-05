@@ -74,6 +74,7 @@ export const Recipients: React.FC = () => {
 
   // File Upload State
   const [isUploading, setIsUploading] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   // Load Table Data
   const loadRecipients = async () => {
@@ -128,12 +129,12 @@ export const Recipients: React.FC = () => {
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await request('/recipients', {
+      const res = await request('/recipients', {
         method: 'POST',
         body: JSON.stringify(manualForm),
       });
 
-      addToast('Recipient added successfully.', 'success');
+      addToast(res.message || 'Recipient(s) added successfully.', 'success');
       setIsAddOpen(false);
       setManualForm({
         name: '',
@@ -169,6 +170,28 @@ export const Recipients: React.FC = () => {
       loadRecipients();
     } catch (err: any) {
       addToast(err.message || 'Bulk operation failed.', 'error');
+    }
+  };
+
+  // Clear All Recipients
+  const handleClearAll = async () => {
+    if (!confirm('Are you sure you want to delete all recipients from the database? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsClearing(true);
+    try {
+      const res = await request('/recipients/clear', {
+        method: 'DELETE',
+      });
+      addToast(res.message || 'All recipients cleared successfully.', 'success');
+      setSelectedIds([]);
+      setPage(1);
+      loadRecipients();
+    } catch (err: any) {
+      addToast(err.message || 'Failed to clear recipients.', 'error');
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -248,10 +271,19 @@ export const Recipients: React.FC = () => {
 
           <button
             onClick={() => setIsAddOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 dark:bg-dark-800 dark:hover:bg-dark-700 font-semibold border text-xs rounded-xl transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-dark-800 dark:hover:bg-dark-700 font-semibold text-white text-xs rounded-xl transition-all border border-slate-700 dark:border-dark-700 shadow-md shadow-slate-900/10"
           >
             <UserPlus className="h-4 w-4" />
             Add Recipient
+          </button>
+
+          <button
+            onClick={handleClearAll}
+            disabled={isClearing || recipients.length === 0}
+            className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-100 disabled:text-slate-400 dark:disabled:bg-dark-800 dark:disabled:text-dark-500 disabled:cursor-not-allowed font-semibold text-white text-xs rounded-xl transition-all shadow-md shadow-rose-500/10 disabled:shadow-none"
+          >
+            {isClearing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            Clear All
           </button>
         </div>
       </div>
@@ -483,16 +515,17 @@ export const Recipients: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-slate-500" htmlFor="manual-email">Email Address</label>
+                <label className="text-[10px] font-semibold text-slate-500" htmlFor="manual-email">Email Address(es)</label>
                 <input
                   id="manual-email"
-                  type="email"
+                  type="text"
                   required
-                  placeholder="john@company.com"
+                  placeholder="john@company.com, sarah@company.com"
                   className="w-full bg-white dark:bg-dark-950 border dark:border-dark-800 rounded-xl py-2 px-3.5 text-xs"
                   value={manualForm.email}
                   onChange={(e) => setManualForm({...manualForm, email: e.target.value})}
                 />
+                <p className="text-[9px] text-slate-400">Separate multiple emails with commas.</p>
               </div>
 
               <div className="space-y-1">

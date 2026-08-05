@@ -46,31 +46,37 @@ export class EmailService {
             user: settings.smtpUser,
             pass: settings.smtpPass,
           } : undefined,
+          tls: {
+            rejectUnauthorized: false
+          }
         }),
         defaultFrom: settings.defaultFrom,
       };
     }
 
     // Providers configured via API keys but sending via standard SMTP relays
-    // SendGrid SMTP Relay: smtp.sendgrid.net, port 587 (TLS), user 'apikey', pass <API Key>
+    // SendGrid SMTP Relay: smtp.sendgrid.net, user 'apikey', pass <API Key>
     if (provider === 'SENDGRID') {
       const apiKeys = settings.apiKeys as any;
       const apiKey = apiKeys?.sendGridKey || process.env.SENDGRID_API_KEY || '';
       return {
         transporter: nodemailer.createTransport({
           host: 'smtp.sendgrid.net',
-          port: 587,
-          secure: false,
+          port: settings.smtpPort || 587,
+          secure: settings.smtpPort === 465,
           auth: {
             user: 'apikey',
             pass: apiKey,
           },
+          tls: {
+            rejectUnauthorized: false
+          }
         }),
         defaultFrom: settings.defaultFrom,
       };
     }
 
-    // Mailgun SMTP Relay: smtp.mailgun.org, port 587, user <username>, pass <password>
+    // Mailgun SMTP Relay: smtp.mailgun.org, user <username>, pass <password>
     if (provider === 'MAILGUN') {
       const apiKeys = settings.apiKeys as any;
       const mgUser = apiKeys?.mailgunUser || '';
@@ -78,18 +84,21 @@ export class EmailService {
       return {
         transporter: nodemailer.createTransport({
           host: 'smtp.mailgun.org',
-          port: 587,
-          secure: false,
+          port: settings.smtpPort || 587,
+          secure: settings.smtpPort === 465,
           auth: {
             user: mgUser,
             pass: mgPass,
           },
+          tls: {
+            rejectUnauthorized: false
+          }
         }),
         defaultFrom: settings.defaultFrom,
       };
     }
 
-    // Amazon SES SMTP Relay: email-smtp.us-east-1.amazonaws.com, port 587, user <SMTP Username>, pass <SMTP Password>
+    // Amazon SES SMTP Relay: email-smtp.us-east-1.amazonaws.com, user <SMTP Username>, pass <SMTP Password>
     if (provider === 'SES') {
       const apiKeys = settings.apiKeys as any;
       const sesUser = apiKeys?.sesUser || '';
@@ -98,12 +107,15 @@ export class EmailService {
       return {
         transporter: nodemailer.createTransport({
           host: `email-smtp.${region}.amazonaws.com`,
-          port: 587,
-          secure: false,
+          port: settings.smtpPort || 587,
+          secure: settings.smtpPort === 465,
           auth: {
             user: sesUser,
             pass: sesPass,
           },
+          tls: {
+            rejectUnauthorized: false
+          }
         }),
         defaultFrom: settings.defaultFrom,
       };

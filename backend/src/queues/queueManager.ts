@@ -216,7 +216,8 @@ export class QueueManager {
       variables,
       docTemplate.type,
       pdfPath,
-      verificationUrl
+      verificationUrl,
+      docTemplate.designMetadata
     );
 
     // Save generated document path to database

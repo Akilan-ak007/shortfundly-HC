@@ -8,7 +8,8 @@ import {
   Save, 
   Info,
   ChevronRight,
-  Loader2
+  Loader2,
+  UploadCloud
 } from 'lucide-react';
 import { request } from '../utils/api';
 import { useToast } from '../context/ToastContext';
@@ -102,6 +103,67 @@ export const Templates: React.FC = () => {
       textarea.focus();
       textarea.setSelectionRange(start + variable.length + 4, start + variable.length + 4);
     }, 50);
+  };
+
+  const [isUploadingBg, setIsUploadingBg] = useState(false);
+
+  const handleBackgroundUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedDoc) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      addToast('File size exceeds the 10MB limit.', 'error');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsUploadingBg(true);
+    try {
+      const response = await fetch('/api/templates/upload-bg', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed.');
+      }
+
+      const res = await response.json();
+      
+      const currentMetadata = selectedDoc.designMetadata || {};
+      const updatedMetadata = {
+        ...currentMetadata,
+        backgroundImageUrl: res.fileUrl,
+        backgroundPdfUrl: file.name.toLowerCase().endsWith('.pdf') ? res.fileUrl : undefined,
+        backgroundPdfPath: file.name.toLowerCase().endsWith('.pdf') ? res.filePath : undefined,
+      };
+
+      setSelectedDoc({
+        ...selectedDoc,
+        designMetadata: updatedMetadata,
+      });
+
+      addToast('Background template uploaded. Click Save Changes to save.', 'success');
+    } catch (err: any) {
+      addToast(err.message || 'Failed to upload background template.', 'error');
+    } finally {
+      setIsUploadingBg(false);
+    }
+  };
+
+  const handleRemoveBackground = () => {
+    if (!selectedDoc) return;
+    setSelectedDoc({
+      ...selectedDoc,
+      designMetadata: {},
+    });
+    addToast('Background template removed. Click Save Changes to save.', 'info');
   };
 
   // Save Document Template
@@ -389,6 +451,41 @@ export const Templates: React.FC = () => {
                       <option key={t.value} value={t.value}>{t.label}</option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              {/* Custom Background Upload */}
+              <div className="bg-slate-100/60 dark:bg-dark-850/60 p-4 rounded-xl border border-slate-200 dark:border-dark-800 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Company Background Template</span>
+                  {selectedDoc.designMetadata?.backgroundImageUrl && (
+                    <button
+                      onClick={handleRemoveBackground}
+                      className="text-[10px] text-red-500 hover:text-red-650 font-semibold transition-colors"
+                    >
+                      Remove Background
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold cursor-pointer transition-all border border-slate-700">
+                    <UploadCloud className="h-3.5 w-3.5" />
+                    {isUploadingBg ? 'Uploading...' : 'Upload PDF/Image'}
+                    <input
+                      type="file"
+                      accept=".pdf, .png, .jpg, .jpeg"
+                      className="hidden"
+                      onChange={handleBackgroundUpload}
+                      disabled={isUploadingBg}
+                    />
+                  </label>
+                  
+                  <span className="text-[11px] text-slate-500 truncate max-w-[200px]">
+                    {selectedDoc.designMetadata?.backgroundImageUrl
+                      ? selectedDoc.designMetadata.backgroundImageUrl.split('/').pop()
+                      : 'No custom background template uploaded (falls back to default style).'}
+                  </span>
                 </div>
               </div>
 

@@ -83,7 +83,7 @@ export class RecipientController {
   }
 
   /**
-   * Adds a single recipient manually.
+   * Adds one or more recipients manually.
    */
   static async create(req: AuthenticatedRequest, res: Response) {
     try {
@@ -94,36 +94,68 @@ export class RecipientController {
         return res.status(400).json({ error: 'Missing required fields.' });
       }
 
-      const existing = await prisma.recipient.findFirst({
-        where: { email: email.toLowerCase(), companyId },
-      });
+      // Split emails by comma, semicolon, or newline/carriage return
+      const emailList = email
+        .split(/[,;\n\r]+/)
+        .map((e: string) => e.trim().toLowerCase())
+        .filter(Boolean);
 
-      if (existing) {
-        return res.status(400).json({ error: 'A recipient with this email already exists.' });
+      if (emailList.length === 0) {
+        return res.status(400).json({ error: 'Please enter at least one valid email address.' });
       }
 
-      const recipient = await prisma.recipient.create({
-        data: {
-          name,
-          email: email.toLowerCase(),
-          position,
-          department,
-          joiningDate: new Date(joiningDate),
-          documentType,
-          attachmentFileName: attachmentFileName || null,
-          companyId,
-          status: 'QUEUED',
-        },
-      });
+      const created: any[] = [];
+      const skipped: string[] = [];
+
+      for (const singleEmail of emailList) {
+        const existing = await prisma.recipient.findFirst({
+          where: { email: singleEmail, companyId },
+        });
+
+        if (existing) {
+          skipped.push(singleEmail);
+          continue;
+        }
+
+        const recipient = await prisma.recipient.create({
+          data: {
+            name,
+            email: singleEmail,
+            position,
+            department,
+            joiningDate: new Date(joiningDate),
+            documentType,
+            attachmentFileName: attachmentFileName || null,
+            companyId,
+            status: 'QUEUED',
+          },
+        });
+        created.push(recipient);
+      }
+
+      if (created.length === 0) {
+        return res.status(400).json({
+          error: `Failed to add recipients. Email(s) already exist: ${skipped.join(', ')}`,
+        });
+      }
+
+      let message = `Successfully added ${created.length} recipient(s).`;
+      if (skipped.length > 0) {
+        message += ` Skipped duplicate email(s): ${skipped.join(', ')}.`;
+      }
 
       await AuditService.log(
         req.user?.id || null,
-        'RECIPIENT_CREATE',
-        `Manually created recipient: ${email}`,
+        'RECIPIENTS_BULK_CREATE',
+        `Manually created ${created.length} recipients.`,
         req.ip
       );
 
-      return res.status(201).json(recipient);
+      return res.status(201).json({
+        message,
+        recipients: created,
+        skipped,
+      });
     } catch (error) {
       console.error('Create recipient error:', error);
       return res.status(500).json({ error: 'An error occurred creating recipient.' });
@@ -269,4 +301,30 @@ export class RecipientController {
       return res.status(500).json({ error: 'An error occurred during bulk operations.' });
     }
   }
+
+  /**
+   * Deletes all recipients for the company.
+   */
+  static async clearAll(req: AuthenticatedRequest, res: Response) {
+    try {
+      const companyId = req.user?.companyId || null;
+
+      await prisma.recipient.deleteMany({
+        where: { companyId },
+      });
+
+      await AuditService.log(
+        req.user?.id || null,
+        'RECIPIENTS_CLEAR_ALL',
+        'Cleared all recipient records.',
+        req.ip
+      );
+
+      return res.status(200).json({ message: 'All recipients deleted successfully.' });
+    } catch (error) {
+      console.error('Clear all recipients error:', error);
+      return res.status(500).json({ error: 'An error occurred clearing recipients.' });
+    }
+  }
 }
+

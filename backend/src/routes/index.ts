@@ -37,6 +37,7 @@ router.post('/upload', authenticateJWT, upload.single('file'), UploadController.
 router.get('/recipients', authenticateJWT, RecipientController.list);
 router.post('/recipients', authenticateJWT, RecipientController.create);
 router.put('/recipients/:id', authenticateJWT, RecipientController.update);
+router.delete('/recipients/clear', authenticateJWT, RecipientController.clearAll);
 router.delete('/recipients/:id', authenticateJWT, RecipientController.delete);
 router.post('/recipients/bulk', authenticateJWT, RecipientController.bulkAction);
 
@@ -48,6 +49,7 @@ router.get('/templates/doc', authenticateJWT, TemplateController.listDocTemplate
 router.post('/templates/doc', authenticateJWT, TemplateController.createDocTemplate);
 router.put('/templates/doc/:id', authenticateJWT, TemplateController.updateDocTemplate);
 router.delete('/templates/doc/:id', authenticateJWT, TemplateController.deleteDocTemplate);
+router.post('/templates/upload-bg', authenticateJWT, upload.single('file'), TemplateController.uploadBackground);
 
 // Email Templates
 router.get('/templates/email', authenticateJWT, TemplateController.listEmailTemplates);

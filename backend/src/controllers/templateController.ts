@@ -1,4 +1,6 @@
 import { Response } from 'express';
+import path from 'path';
+import fs from 'fs';
 import { AuthenticatedRequest } from '../middleware/auth';
 import prisma from '../models/db';
 import { AIService } from '../services/aiService';
@@ -102,6 +104,37 @@ export class TemplateController {
     } catch (error) {
       console.error('Delete doc template error:', error);
       return res.status(500).json({ error: 'An error occurred deleting document template.' });
+    }
+  }
+
+  static async uploadBackground(req: AuthenticatedRequest, res: Response) {
+    try {
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: 'No file uploaded.' });
+      }
+
+      const storageDir = process.env.STORAGE_DIR || './storage';
+      const templatesDir = path.resolve(storageDir, 'templates');
+      if (!fs.existsSync(templatesDir)) {
+        fs.mkdirSync(templatesDir, { recursive: true });
+      }
+
+      const ext = path.extname(file.originalname).toLowerCase();
+      const filename = `template_bg_${Date.now()}${ext}`;
+      const filePath = path.join(templatesDir, filename);
+
+      fs.writeFileSync(filePath, file.buffer);
+
+      const fileUrl = `/storage/templates/${filename}`;
+      return res.status(200).json({
+        message: 'Background template uploaded successfully.',
+        fileUrl,
+        filePath,
+      });
+    } catch (error) {
+      console.error('Upload background error:', error);
+      return res.status(500).json({ error: 'An error occurred uploading background.' });
     }
   }
 

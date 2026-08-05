@@ -65,32 +65,25 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 text-slate-100 relative overflow-hidden">
+    <div className="dark min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 relative overflow-hidden">
       {/* Decorative Blur Spheres */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary-900/20 blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary-700/20 blur-[120px]" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary-900/10 blur-[120px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-cyan-700/10 blur-[120px]" />
 
       {/* Main card */}
-      <div className="w-full max-w-md p-8 glass rounded-3xl border border-slate-800 shadow-2xl relative z-10 flex flex-col gap-6 m-4">
+      <div className="w-full max-w-md p-8 glass rounded-3xl border border-slate-800 shadow-2xl relative z-10 flex flex-col gap-6 m-4 transition-all">
         {/* Branding header */}
         <div className="text-center space-y-2">
-          <div className="bg-primary-500 text-white p-3 rounded-2xl w-fit mx-auto shadow-lg shadow-primary-500/20">
+          <div className="bg-gradient-to-tr from-primary-500 to-cyan-400 text-white p-3 rounded-2xl w-fit mx-auto shadow-lg shadow-primary-500/20">
             <Mail className="h-7 w-7" />
           </div>
-          <h2 className="text-2xl font-bold tracking-tight">HR Email Automation</h2>
+          <h2 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">HR Email Automation</h2>
           <p className="text-sm text-slate-400">Sign in to manage company documents & dispatches</p>
-        </div>
-
-        {/* Demo hints block */}
-        <div className="bg-slate-850/80 border border-slate-800 p-3.5 rounded-2xl text-xs space-y-1">
-          <p className="font-semibold text-primary-400 uppercase tracking-wide text-[10px]">Developer Seeding Credentials</p>
-          <p>📧 Email: <code className="text-slate-200">admin@acme.com</code></p>
-          <p>🔑 Password: <code className="text-slate-200">admin123</code></p>
         </div>
 
         {/* Error Callout */}
         {error && (
-          <div className="bg-red-950/30 border border-red-900/30 p-3.5 rounded-2xl flex gap-2.5 text-sm text-red-400">
+          <div className="bg-red-950/30 border border-red-900/30 p-3.5 rounded-2xl flex gap-2.5 text-sm text-red-400 animate-pulse">
             <AlertCircle className="h-5 w-5 shrink-0" />
             <span>{error}</span>
           </div>
@@ -105,7 +98,7 @@ export const Login: React.FC = () => {
                 id="email-input"
                 type="email"
                 required
-                className="w-full bg-slate-950/40 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm focus:border-primary-500 focus:outline-none transition-colors"
+                className="w-full bg-slate-950/40 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none transition-all"
                 placeholder="admin@acme.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -119,7 +112,7 @@ export const Login: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsForgotOpen(true)}
-                className="text-xs text-primary-400 hover:underline"
+                className="text-xs text-primary-400 hover:text-primary-300 transition-colors hover:underline"
               >
                 Forgot Password?
               </button>
@@ -130,7 +123,7 @@ export const Login: React.FC = () => {
                 id="password-input"
                 type={showPassword ? 'text' : 'password'}
                 required
-                className="w-full bg-slate-950/40 border border-slate-800 rounded-xl py-3 pl-10 pr-12 text-sm focus:border-primary-500 focus:outline-none transition-colors"
+                className="w-full bg-slate-950/40 border border-slate-800 rounded-xl py-3 pl-10 pr-12 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none transition-all"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -138,7 +131,7 @@ export const Login: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-300"
+                className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-300 transition-colors"
               >
                 {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
               </button>
@@ -148,7 +141,7 @@ export const Login: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-primary-500 hover:bg-primary-600 active:scale-[0.98] py-3.5 rounded-xl text-sm font-semibold text-white shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-primary-500 to-cyan-500 hover:from-primary-600 hover:to-cyan-600 active:scale-[0.98] py-3.5 rounded-xl text-sm font-semibold text-white shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sign In To Workspace'}
           </button>
