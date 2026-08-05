@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # Database Service
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: hr-automation-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: email_automation
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Broker Service
+  redis-broker:
+    image: redis:7-alpine
+    container_name: hr-automation-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  # Backend Service
+  backend-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hr-automation-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - DATABASE_URL=postgresql://postgres:postgrespassword@postgres-db:5432/email_automation?schema=public
+      - REDIS_URL=redis://redis-broker:6379
+      - JWT_SECRET=super-secret-jwt-key-change-in-production
+      - STORAGE_DIR=/app/storage
+      - NODE_ENV=production
+    depends_on:
+      - postgres-db
+      - redis-broker
+    volumes:
+      - document-storage:/app/storage
+
+  # Frontend Service
+  frontend-client:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hr-automation-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend-api
+
+volumes:
+  pgdata:
+  document-storage:
