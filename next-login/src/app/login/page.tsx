@@ -56,8 +56,9 @@ export default function LoginPage() {
         router.push('/');
         router.refresh();
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'An authentication error occurred.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'An authentication error occurred.';
+      setErrorMsg(message);
     } finally {
       setLoading(false);
     }

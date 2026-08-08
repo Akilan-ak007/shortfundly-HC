@@ -126,3 +126,35 @@ shortfundly-hc/
 3.  **Data Integrity Check**: Audits the queued lists for anomalies (Caps Lock names, mismatched emails, incorrect columns) before starting bulk dispatches.
 4.  **AI Scheduler**: Recommends peak email engagement hours.
 5.  **Executive summaries**: Generates summary paragraphs of the automation batch once completed.
+
+---
+
+## New Features & Extensions
+
+### 1. Custom Template Background Uploads (PDF & Image)
+*   **Overview**: You can upload custom corporate letterheads or certificate borders (PDF, PNG, or JPG) in the Templates tab.
+*   **Technology**: 
+    *   **Backend**: Uses `pdf-lib` to overlay generated dynamic text (names, dates, positions) on top of the pages of your uploaded background PDF template on the fly.
+    *   **Frontend**: Multi-part form widgets in [`Templates.tsx`](file:///Users/akilank/Documents/shortfundly-HC/frontend/src/pages/Templates.tsx) handle uploads and display preview metadata.
+
+### 2. Manual Batch Recipient Add
+*   **Overview**: You can now enter multiple email addresses separated by commas, semicolons, or newlines in the Add Recipient modal.
+*   **Technology**: The backend split-logic parses the email string, inserts unique records for each recipient, and safely ignores duplicates.
+
+### 3. Standalone Next.js Auth App (Supabase Integration)
+*   **Overview**: A standalone Next.js App Router project located in the [`next-login/`](file:///Users/akilank/Documents/shortfundly-HC/next-login) folder. It provides a secure, glassmorphic login gate integrated with **Supabase Authentication**.
+*   **Installation**:
+    1. Navigate to the folder:
+       ```bash
+       cd next-login
+       ```
+    2. Install dependencies:
+       ```bash
+       npm install
+       ```
+    3. Start the dev server on port 3001:
+       ```bash
+       npm run dev
+       ```
+    4. Access the login screen at `http://localhost:3001/login`.
+

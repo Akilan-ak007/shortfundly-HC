@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://your-backend-api.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/storage/:path*",
+      "destination": "https://your-backend-api.up.railway.app/storage/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
