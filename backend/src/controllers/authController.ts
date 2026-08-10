@@ -58,9 +58,9 @@ export class AuthController {
           companyName: user.company?.name || null,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      return res.status(500).json({ error: 'An error occurred during login.' });
+      return res.status(500).json({ error: `An error occurred during login: ${error.message || error}` });
     }
   }
 
