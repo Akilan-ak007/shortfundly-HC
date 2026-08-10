@@ -35,9 +35,9 @@ git push origin main
 ---
 
 ## Step 3: Deploy the Backend (`backend`)
-Since the backend uses a persistent server, a PostgreSQL database, and Redis (for BullMQ queues), it cannot be hosted directly on Vercel. We recommend deploying on **Railway** or **Render**.
+Since the backend uses a database and queues, it is typically hosted on Railway or Render. However, the backend has been re-architected with a synchronous serverless fallback and self-healing PDF regeneration, allowing it to be deployed entirely on Vercel as well.
 
-### Option A: Railway (Recommended - Simplest Setup)
+### Option A: Railway (Persistent Server Setup)
 1. Log in to [Railway](https://railway.app).
 2. Click **New Project** > **Provision PostgreSQL** and **Provision Redis**.
 3. Click **New Project** > **Github Repo** and select the repository.
@@ -53,6 +53,25 @@ Since the backend uses a persistent server, a PostgreSQL database, and Redis (fo
    ```bash
    npx prisma migrate deploy
    npm run seed
+   ```
+
+### Option B: Vercel Serverless (Stateless / Database-only Setup)
+1. Log in to [Vercel](https://vercel.com).
+2. Click **Add New** > **Project** and select your GitHub repository.
+3. In the configuration settings:
+   * **Project Name**: `shortfundly-backend`
+   * **Framework Preset**: `Other`
+   * **Root Directory**: `backend` *(Make sure to edit and point this to `backend`!)*
+4. **Environment Variables**: Add the following keys:
+   * `DATABASE_URL` = (Your hosted PostgreSQL URL, e.g. from Neon, Supabase or Railway)
+   * `JWT_SECRET` = `any-strong-secret-key`
+   * `PROCESS_MODE` = `serverless` (Instructs the server to execute automation tasks synchronously in parallel without background worker queues)
+   * *Optionally (if using Gemini AI)*: `GEMINI_API_KEY` = `your-google-gemini-key`
+5. Click **Deploy**. Vercel will automatically build the backend API, trigger Prisma client generation, and deploy the serverless functions.
+6. To run database migrations and seed data, execute the commands from a local terminal pointed to your remote database:
+   ```bash
+   DATABASE_URL="your-hosted-database-url" npx prisma migrate deploy
+   DATABASE_URL="your-hosted-database-url" npm run seed
    ```
 
 ---

@@ -34,3 +34,8 @@ yarn-debug.log*
 yarn-error.log*
 logs/
 *.log
+
+# Redis
+dump.rdb
+*.rdb
+

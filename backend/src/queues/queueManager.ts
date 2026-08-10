@@ -97,7 +97,15 @@ export class QueueManager {
    * Enqueues a new automation job.
    */
   static async addJob(data: AutomationJobData) {
-    if (this.isRedisAvailable && this.queue) {
+    if (process.env.VERCEL || process.env.PROCESS_MODE === 'sync' || process.env.PROCESS_MODE === 'serverless') {
+      console.log(`Running job synchronously for recipient ${data.recipientId} (Serverless Mode)`);
+      try {
+        await this.executeJob(data);
+      } catch (error: any) {
+        console.error(`Synchronous job failed for recipient ${data.recipientId}:`, error);
+        await this.handleJobFailure(data, error.message || 'Unknown error', 1);
+      }
+    } else if (this.isRedisAvailable && this.queue) {
       await this.queue.add(`job-${data.recipientId}`, data);
     } else {
       this.memoryQueue.push(data);

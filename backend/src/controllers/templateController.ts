@@ -114,6 +114,15 @@ export class TemplateController {
         return res.status(400).json({ error: 'No file uploaded.' });
       }
 
+      if (process.env.VERCEL || process.env.PROCESS_MODE === 'serverless' || process.env.PROCESS_MODE === 'sync') {
+        const base64Data = file.buffer.toString('base64');
+        const fileUrl = `data:${file.mimetype};base64,${base64Data}`;
+        return res.status(200).json({
+          fileUrl,
+          filePath: null,
+        });
+      }
+
       const storageDir = process.env.STORAGE_DIR || './storage';
       const templatesDir = path.resolve(storageDir, 'templates');
       if (!fs.existsSync(templatesDir)) {

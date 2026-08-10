@@ -51,14 +51,15 @@ export class AutomationController {
         },
       });
 
-      // Enqueue job for each recipient asynchronously
-      for (const recipient of pendingRecipients) {
-        await QueueManager.addJob({
+      // Enqueue job for each recipient concurrently
+      const jobs = pendingRecipients.map(recipient =>
+        QueueManager.addJob({
           recipientId: recipient.id,
           templateId,
           emailTemplateId,
-        });
-      }
+        })
+      );
+      await Promise.all(jobs);
 
       await AuditService.log(
         req.user?.id || null,

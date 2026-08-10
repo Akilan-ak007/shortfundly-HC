@@ -51,19 +51,48 @@ export class PDFService {
         let hasBackground = false;
         let bgImagePath = '';
         const bgUrl = designMetadata?.backgroundImageUrl;
+        let bgPdfUrl = designMetadata?.backgroundPdfUrl || (bgUrl?.toLowerCase().endsWith('.pdf') ? bgUrl : null);
+        let bgPdfPath = designMetadata?.backgroundPdfPath || (bgPdfUrl ? path.resolve(storageDir, bgPdfUrl.replace(/^\/storage\//, '')) : null);
         
+        let tempBgPath = '';
+
         if (bgUrl) {
-          const relativePath = bgUrl.replace(/^\/storage\//, '');
-          bgImagePath = path.resolve(storageDir, relativePath);
-          if (fs.existsSync(bgImagePath) && !bgImagePath.toLowerCase().endsWith('.pdf')) {
-            hasBackground = true;
+          if (bgUrl.startsWith('data:')) {
+            const match = bgUrl.match(/^data:([^;]+);base64,(.+)$/);
+            if (match) {
+              const mimeType = match[1];
+              const base64Data = match[2];
+              const buffer = Buffer.from(base64Data, 'base64');
+              const isPdf = mimeType === 'application/pdf';
+              const tempFilename = `temp_bg_${Date.now()}_${Math.random().toString(36).substring(7)}.${isPdf ? 'pdf' : 'png'}`;
+              tempBgPath = path.join(storageDir, tempFilename);
+              
+              // Ensure storage directory exists
+              const dir = path.dirname(tempBgPath);
+              if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+              }
+              
+              fs.writeFileSync(tempBgPath, buffer);
+              
+              if (isPdf) {
+                bgPdfPath = tempBgPath;
+              } else {
+                bgImagePath = tempBgPath;
+              }
+              hasBackground = true;
+            }
+          } else {
+            const relativePath = bgUrl.replace(/^\/storage\//, '');
+            bgImagePath = path.resolve(storageDir, relativePath);
+            if (fs.existsSync(bgImagePath) && !bgImagePath.toLowerCase().endsWith('.pdf')) {
+              hasBackground = true;
+            }
           }
         }
 
-        // Check if PDF background path is set
-        const bgPdfUrl = designMetadata?.backgroundPdfUrl || (bgUrl?.toLowerCase().endsWith('.pdf') ? bgUrl : null);
-        const bgPdfPath = designMetadata?.backgroundPdfPath || (bgPdfUrl ? path.resolve(storageDir, bgPdfUrl.replace(/^\/storage\//, '')) : null);
-        if (bgPdfPath && fs.existsSync(bgPdfPath)) {
+        // Check if PDF background path is set (if not already set by data URL)
+        if (!tempBgPath && bgPdfPath && fs.existsSync(bgPdfPath)) {
           hasBackground = true;
         }
 
@@ -131,6 +160,14 @@ export class PDFService {
             resolve(outputPath);
           } catch (overlayErr) {
             reject(overlayErr);
+          } finally {
+            if (tempBgPath && fs.existsSync(tempBgPath)) {
+              try {
+                fs.unlinkSync(tempBgPath);
+              } catch (e) {
+                console.error('Error cleaning up temp background template:', e);
+              }
+            }
           }
         });
 
