@@ -1,7 +1,8 @@
 {
   "services": {
     "frontend": {
-      "root": "frontend"
+      "root": "frontend",
+      "framework": "vite"
     },
     "backend": {
       "root": "backend",
@@ -18,20 +19,8 @@
       "destination": { "service": "backend" }
     },
     {
-      "source": "/assets/:path*",
+      "source": "/(.*)",
       "destination": { "service": "frontend" }
-    },
-    {
-      "source": "/favicon.ico",
-      "destination": { "service": "frontend" }
-    },
-    {
-      "source": "/favicon.svg",
-      "destination": { "service": "frontend" }
-    },
-    {
-      "source": "/:path*",
-      "destination": { "service": "frontend", "path": "/index.html" }
     }
   ]
 }
