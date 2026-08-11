@@ -64,6 +64,16 @@ export default function LoginPage() {
     }
   };
 
+  const handleMockBypass = () => {
+    const mockUser = {
+      email: 'developer@acme.com',
+      name: 'Jane Doe (Dev Mock)',
+    };
+    document.cookie = `sb-mock-session=${encodeURIComponent(JSON.stringify(mockUser))}; path=/; max-age=86400;`;
+    router.push('/');
+    router.refresh();
+  };
+
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-slate-950 overflow-hidden font-sans">
       {/* Background gradients */}
@@ -168,6 +178,24 @@ export default function LoginPage() {
           >
             {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
           </button>
+        </div>
+
+        {/* Developer Bypass Sandbox */}
+        <div className="mt-6 pt-6 border-t border-slate-800/80 text-center">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Developer Sandbox</p>
+          <button
+            type="button"
+            onClick={handleMockBypass}
+            className="w-full bg-slate-950/40 hover:bg-slate-900 text-violet-400 hover:text-violet-300 font-semibold text-xs rounded-xl py-3 border border-slate-800 hover:border-slate-700 transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer"
+          >
+            <Sparkles className="h-4 w-4 animate-pulse" />
+            Bypass with Mock Developer Account
+          </button>
+          {errorMsg?.includes('rate limit') && (
+            <p className="text-[10px] text-amber-400 mt-3.5 font-medium leading-relaxed bg-amber-500/5 border border-amber-500/10 p-2.5 rounded-xl">
+              ⚠️ Remote Supabase email rate limit reached. Please use the developer bypass button above to test local authentication.
+            </p>
+          )}
         </div>
       </div>
     </div>
