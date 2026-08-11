@@ -11,7 +11,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "seed": "ts-node src/models/seed.ts",
-    "automate": "ts-node src/scripts/automate.ts"
+    "automate": "ts-node src/scripts/automate.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.12.1",
@@ -28,6 +29,7 @@
     "nodemailer": "^6.9.13",
     "pdf-lib": "^1.17.1",
     "pdfkit": "^0.15.0",
+    "prisma": "^5.12.1",
     "qrcode": "^1.5.3",
     "uuid": "^9.0.1",
     "xlsx": "^0.18.5"
@@ -44,7 +46,6 @@
     "@types/qrcode": "^1.5.5",
     "@types/uuid": "^9.0.8",
     "nodemon": "^3.1.0",
-    "prisma": "^5.12.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }
