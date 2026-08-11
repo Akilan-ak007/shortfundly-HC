@@ -129,7 +129,7 @@ export class DashboardController {
    */
   private static async getSendingTrends(companyId: string | null) {
     // Generate dates for the last 6 months
-    const trends = [];
+    const trends: any[] = [];
     for (let i = 5; i >= 0; i--) {
       const date = new Date();
       date.setMonth(date.getMonth() - i);
